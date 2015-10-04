@@ -29,13 +29,15 @@ targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    maven {
+        url "http://maven.vaadin.com/vaadin-addons"
+    }
 }
-
 
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-mail")
     compile("com.vaadin:vaadin-spring-boot-starter:1.0.0.beta3")
-    testCompile("org.springframework.boot:spring-boot-starter-test") 
+    testCompile("org.springframework.boot:spring-boot-starter-test")
 }
 
 dependencyManagement {

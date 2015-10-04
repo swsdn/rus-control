@@ -17,6 +17,7 @@ public enum MotionCommands implements Command{
 
     MotionCommands(String cmd) {
         this.command = BlockingCommand.getCommand(cmd);
+        //this.command = CommandStub.getCommand(cmd);
     }
 
     @Override

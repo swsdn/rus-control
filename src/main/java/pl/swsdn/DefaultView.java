@@ -4,51 +4,69 @@ import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener;
 import com.vaadin.spring.annotation.SpringView;
 import com.vaadin.ui.*;
+import com.vaadin.ui.themes.ValoTheme;
+import pl.swsdn.command.Command;
 import pl.swsdn.command.motion.MotionCommands;
 
 import javax.annotation.PostConstruct;
-import java.io.*;
+import java.io.IOException;
+import java.util.function.Supplier;
 
 @SpringView(name = DefaultView.VIEW_NAME)
 public class DefaultView extends VerticalLayout implements View {
     public static final String VIEW_NAME = "";
+    private final StatusBox statusBox = new StatusBox(MotionCommands.STATUS);
 
     @PostConstruct
     void init() throws IOException {
         setMargin(true);
         setSpacing(true);
-        addComponent(new Label("This is the default view"));
-
         addComponents(
-                new Label("status: "),
-                new Label(MotionCommands.STATUS.execute()));
+                getTitleComponent(),
+                getStatusBox("start on boot", this::isMotionEnabled, MotionCommands.ENABLE, MotionCommands.DISABLE),
+                getStatusBox("is active", this::isMotionActive, MotionCommands.START, MotionCommands.STOP),
+                statusBox.getStatusComponent()
+        );
+    }
 
-        CheckBox enabledBox = new CheckBox("enabled");
-        enabledBox.setValue(isMotionEnabled());
-        enabledBox.addValueChangeListener(event -> {
-            if (isMotionEnabled()) {
-                MotionCommands.DISABLE.execute();
+    private Component getStatusBox(String text, Supplier<Boolean> isEnabled, Command enable, Command disable) {
+        boolean enabled = isEnabled.get();
+        Button button = new Button();
+        setButtonCaption(button, enabled);
+        button.setHeight("24px");
+        button.setDisableOnClick(true);
+
+        button.addClickListener(e -> {
+            if (isEnabled.get()) {
+                disable.execute();
             } else {
-                MotionCommands.ENABLE.execute();
+                enable.execute();
             }
-            enabledBox.setValue(isMotionEnabled());
-            Notification.show("Motion is", MotionCommands.IS_ENABLED.execute(), Notification.Type.HUMANIZED_MESSAGE);
+            button.setEnabled(true);
+            boolean isNowEnabled = isEnabled.get();
+            setButtonCaption(button, isNowEnabled);
+            Notification.show("New status is", getButtonCaption(isNowEnabled), Notification.Type.HUMANIZED_MESSAGE);
+            statusBox.updateComponent();
         });
+        HorizontalLayout layout = new HorizontalLayout(new Label(text), button);
+        layout.setSpacing(true);
+        return layout;
+    }
 
-        CheckBox activeBox = new CheckBox("active");
-        activeBox.setValue(isMotionActive());
-        activeBox.addValueChangeListener(event -> {
-            if (isMotionActive()) {
-                MotionCommands.STOP.execute();
-            } else {
-                MotionCommands.START.execute();
-            }
-            activeBox.setValue(isMotionActive());
-            Notification.show("Motion is", MotionCommands.IS_ACTIVE.execute(), Notification.Type.HUMANIZED_MESSAGE);
-        });
+    private void setButtonCaption(Button button, boolean enabled) {
+        button.setCaption(getButtonCaption(enabled));
+        button.setStyleName(enabled ? ValoTheme.BUTTON_FRIENDLY : ValoTheme.BUTTON_DANGER);
+    }
 
-        addComponent(enabledBox);
-        addComponent(activeBox);
+    private String getButtonCaption(boolean enabled) {
+        return enabled ? "ON" : "OFF";
+    }
+
+    private Label getTitleComponent() {
+        Label label = new Label("Motion service status");
+        label.addStyleName(ValoTheme.LABEL_H1);
+        label.setSizeFull();
+        return label;
     }
 
     private boolean isMotionEnabled() {
